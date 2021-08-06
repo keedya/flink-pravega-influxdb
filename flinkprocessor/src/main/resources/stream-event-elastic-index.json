@@ -1,0 +1,16 @@
+{
+  "@@type@@": {
+    "dynamic": false,
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "t": {
+        "type": "date"
+      },
+      "v": {
+        "type": "Float"
+      }
+    }
+  }
+}

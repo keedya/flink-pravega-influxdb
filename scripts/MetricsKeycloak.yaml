@@ -1,0 +1,30 @@
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceInstance
+metadata:
+  name: milos-grafana
+  namespace: default
+spec:
+  clusterServiceClassExternalName: keycloak-client
+  clusterServicePlanExternalName: confidential-client
+  parameters:
+    client-id: milos-grafana
+    standard-flow-enabled: true
+    redirect-uris: "*"
+    web-origins: "+"
+---
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceBinding
+metadata:
+  name: milos-grafana
+  namespace: default
+spec:
+  instanceRef:
+    name: "milos-grafana"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    nautilus.dellemc.com/serviceaccount-secret-name: "milos-grafana"
+  name: milos-grafana
+  namespace: default
