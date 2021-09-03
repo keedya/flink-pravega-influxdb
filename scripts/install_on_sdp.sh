@@ -16,10 +16,21 @@ source ${ROOT_DIR}/scripts/env.sh
 VALUES_FILE=${ROOT_DIR}/values/metrics.yaml
 
 
-# Deploy influxdb grafana
-kubectl apply -f ${ROOT_DIR}/scripts/MetricsKeycloak.yaml
+# remove old influxdb grafana
+kubectl delete -f ${ROOT_DIR}/scripts/MetricsKeycloak.yaml | true
+
+kubectl apply -f ${ROOT_DIR}/scripts/Metrics.yaml | true
 sleep 4
-kubectl apply -f ${ROOT_DIR}/scripts/Metrics.yaml
+
+#deploy new influxdb with tls
+
+helm upgrade --install milos --timeout 600s  --wait \
+     --set image.repository=${DOCKER_REGISTRY}/influxdb \
+     --set image.tag=1.8.0-alpine  \
+     --set setDefaultUser.image=${DOCKER_REGISTRY}/curl:latest \
+     --set ingress.hostname=milos.sdp.sdp-demo.org \
+     ${ROOT_DIR}/charts/influxdb \
+     $@
 
 # Publish Application
 ${ROOT_DIR}/scripts/publish.sh
@@ -47,12 +58,6 @@ helm upgrade --install --timeout 600s  --wait \
     --set "mavenCoordinate.version=${APP_VERSION}" \
     $@
 
-# expose for litmus
-kubectl expose svc milos --type=LoadBalancer --name=litmus | true
-
-echo "use the following IP to access influxdb outside SDP"
-kubectl get svc litmus
-
-echo " Grafana URL"
+echo " influxdb URL"
 kubectl get ing
 

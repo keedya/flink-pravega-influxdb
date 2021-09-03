@@ -37,6 +37,9 @@ dependencies {
     compile "org.apache.flink:flink-streaming-java_${flinkScalaVersion}:${flinkVersion}"
     compile "org.apache.flink:flink-table-api-java-bridge_${flinkScalaVersion}:${flinkVersion}"
     compile "org.apache.flink:flink-table-planner_${flinkScalaVersion}:${flinkVersion}"
+    compile group: 'org.apache.flink', name: 'flink-jdbc', version: '1.3.1'
+
+
 
     // --------------------------------------------------------------
     // Dependencies that should be part of the shadow jar, e.g.
@@ -49,6 +52,7 @@ dependencies {
     flinkShadowJar "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     // enable Once copied jar file to libs folder.
     flinkShadowJar files("./libs/flink-connector-influxdb_2.11-1.1-SNAPSHOT.jar")
+    flinkShadowJar files("./libs/postgresql-42.2.23.jar")
     flinkShadowJar group: 'org.influxdb', name: 'influxdb-java', version: '2.7'
     
     if (includePravegaCredentials.toBoolean()) {
