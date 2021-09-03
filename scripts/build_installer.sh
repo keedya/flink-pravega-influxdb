@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 # Copyright (c) Dell Inc., or its subsidiaries. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
 
 # Build the installer archive, including the Java JAR file and all dependencies.
 
+: ${LOCAL_DOCKER_REGISRY?"You must export LOCAL_DOCKER_REGISRY"}
 set -ex
 ROOT_DIR=$(readlink -f $(dirname $0)/..)
 source ${ROOT_DIR}/scripts/env.sh
@@ -18,6 +13,18 @@ INSTALLER_TGZ=${ROOT_DIR}/build/installer/${APP_NAME}-${APP_VERSION}.tgz
 # Delete output directories and files.
 rm -rf ${INSTALLER_BUILD_DIR} ${INSTALLER_TGZ}
 mkdir -p ${INSTALLER_BUILD_DIR}
+mkdir -p ${INSTALLER_BUILD_DIR}/docker_images
+
+# tag and copy docker images
+docker pull ${LOCAL_DOCKER_REGISRY}/influxdb:1.8.0-alpine
+docker tag ${LOCAL_DOCKER_REGISRY}/influxdb:1.8.0-alpine influxdb:1.8.0-alpine
+
+docker pull ${LOCAL_DOCKER_REGISRY}/curl:latest
+docker tag ${LOCAL_DOCKER_REGISRY}/curl:latest curl:latest
+pushd ${INSTALLER_BUILD_DIR}/docker_images
+docker save influxdb:1.8.0-alpine curl:latest | gzip > influx.tar.gz
+popd
+
 
 # Build Flink application JAR.
 pushd ${ROOT_DIR}/

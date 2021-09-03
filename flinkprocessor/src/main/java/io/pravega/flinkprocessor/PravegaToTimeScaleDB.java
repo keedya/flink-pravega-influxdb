@@ -61,7 +61,7 @@ public class PravegaToTimeScaleDB extends AbstractJob {
                     .name("read-flatten-events");
             //events.printToErr();
             DataStream<Row> rows = events.map((MapFunction<FlatMetricReport, Row>) metricValue -> {
-                Row row = new Row(7); // our prepared statement has 2 parameters
+                Row row = new Row(7);
                 //row.setField(0, LocalDateTime.ofEpochSecond(metricValue.Timestamp/1000, 0 , ZoneOffset.UTC));
                 row.setField(0, LocalDateTime.now());
                 row.setField(1, metricValue.RemoteAddr);
