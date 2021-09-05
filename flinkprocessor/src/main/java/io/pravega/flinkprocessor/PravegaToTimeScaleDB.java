@@ -2,7 +2,7 @@ package io.pravega.flinkprocessor;
 
 import io.pravega.client.stream.StreamCut;
 import io.pravega.connectors.flink.FlinkPravegaReader;
-import io.pravega.flinkprocessor.datatypes.FlatMetricReport;
+import io.pravega.flinkprocessor.datatypes.tag;
 import io.pravega.flinkprocessor.util.JsonDeserializationSchema;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.io.jdbc.JDBCOutputFormat;
@@ -12,7 +12,9 @@ import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Types;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 
 public class PravegaToTimeScaleDB extends AbstractJob {
@@ -35,11 +37,20 @@ public class PravegaToTimeScaleDB extends AbstractJob {
 
     public void run() {
         try {
-            String query = "INSERT INTO idrac(time, remote_addr, value, Metric_id, rack_label, context_id, id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            String query = String.format("INSERT INTO %s(time, tagname, value, success) VALUES (?, ?, ?, ?)",
+                    getConfig().getTimescaledbTable());
             JDBCOutputFormat jdbcOutput = JDBCOutputFormat.buildJDBCOutputFormat()
                     .setDrivername("org.postgresql.Driver")
-                    .setDBUrl("jdbc:postgresql://localhost:5432/testdb?user=postgres&password=password")
+                    .setDBUrl(String.format("jdbc:%s/%s?user=%s&password=%s",
+                            getConfig().getTimescaledbUrl(),
+                            getConfig().getTimescaledbDatabase(),
+                            getConfig().getTimescaledbUsername(),
+                            getConfig().getTimescaledbPassword()
+                             )
+                    )
                     .setQuery(query)
+                    .setSqlTypes(new int[] { Types.TIMESTAMP_WITH_TIMEZONE, Types.VARCHAR, Types.BIGINT, Types.BOOLEAN })
+                    .setBatchInterval(getConfig().getTimescaledbBatchSize())
                     .finish();
             final AppConfiguration.StreamConfig inputStreamConfig = getConfig().getStreamConfig("input");
             log.info("input stream: {}", inputStreamConfig);
@@ -50,26 +61,22 @@ public class PravegaToTimeScaleDB extends AbstractJob {
             log.info("fixedRoutingKey: {}", fixedRoutingKey);
             final StreamExecutionEnvironment env = initializeFlinkStreaming();
 
-            final FlinkPravegaReader<FlatMetricReport> flinkPravegaReader = FlinkPravegaReader.<FlatMetricReport>builder()
+            final FlinkPravegaReader<tag> flinkPravegaReader = FlinkPravegaReader.<tag>builder()
                     .withPravegaConfig(inputStreamConfig.getPravegaConfig())
                     .forStream(inputStreamConfig.getStream(), startStreamCut, endStreamCut)
-                    .withDeserializationSchema(new JsonDeserializationSchema(FlatMetricReport.class))
+                    .withDeserializationSchema(new JsonDeserializationSchema(tag.class))
                     .build();
 
-            DataStream<FlatMetricReport> events = env
+            DataStream<tag> events = env
                     .addSource(flinkPravegaReader)
                     .name("read-flatten-events");
             //events.printToErr();
-            DataStream<Row> rows = events.map((MapFunction<FlatMetricReport, Row>) metricValue -> {
-                Row row = new Row(7);
-                //row.setField(0, LocalDateTime.ofEpochSecond(metricValue.Timestamp/1000, 0 , ZoneOffset.UTC));
-                row.setField(0, LocalDateTime.now());
-                row.setField(1, metricValue.RemoteAddr);
-                row.setField(2, metricValue.MetricValue);
-                row.setField(3, metricValue.MetricId);
-                row.setField(4, metricValue.RackLabel);
-                row.setField(5, metricValue.ContextID);
-                row.setField(6, metricValue.Id);
+            DataStream<Row> rows = events.map((MapFunction<tag, Row>) metricValue -> {
+                Row row = new Row(4);
+                row.setField(0, LocalDateTime.ofEpochSecond(metricValue.timestamp/1000, 0 , ZoneOffset.UTC));
+                row.setField(1, metricValue.tagName);
+                row.setField(2, metricValue.value);
+                row.setField(3, metricValue.success);
                 return row;
             });
             rows.writeUsingOutputFormat(jdbcOutput);

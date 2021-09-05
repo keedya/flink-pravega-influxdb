@@ -49,6 +49,15 @@ public class AppConfiguration {
     private String influxdb_database;
     private int influxdb_batchSize;
     private int influxdb_flushDuration;
+
+    //timescaleDB
+    private String timescaleDBUrl;
+    private String timescaleDB_username;
+    private String timescaleDB_password;
+    private String timescaleDB_database;
+    private String timescaleDB_table;
+    private int timescaleDBbatchSize;
+
     private final ElasticSearch elasticSearch = new ElasticSearch();
 
     public AppConfiguration(String[] args) throws IOException {
@@ -76,7 +85,13 @@ public class AppConfiguration {
         elasticSearch.setIndex(params.get("elastic-index", "stream"));
         // elastic-type: The name of the type to sink.
         elasticSearch.setType(params.get("elastic-type", "event"));
-
+        // timscaleDB
+        timescaleDBUrl = params.get("timescaleDBUrl", "postgresql://localhost:5432");
+        timescaleDB_username = params.get("timescaleDB_username", "postgres");
+        timescaleDB_password = params.get("timescaleDB_password", "password");
+        timescaleDB_database = params.get("timescaleDB_database", "litmus");
+        timescaleDB_table = params.get("timescaleDB_table", "litmus");
+        timescaleDBbatchSize = params.getInt("timescaleDBbatchSize", 5000);
         // InfluxDB
         metricsSink  = params.get("metricsSink", "InfluxDB");
         influxDbUrl  = params.get("influxDB.host", "http://milos.default.svc.cluster.local:8086");
@@ -190,6 +205,28 @@ public class AppConfiguration {
 
     public int getInfluxdbBatchSize() {
         return influxdb_batchSize;
+    }
+
+    public String getTimescaledbUrl() { return timescaleDBUrl; }
+
+    public String getTimescaledbUsername() {
+        return timescaleDB_username;
+    }
+
+    public String getTimescaledbPassword() {
+        return timescaleDB_password;
+    }
+
+    public String getTimescaledbDatabase() {
+        return timescaleDB_database;
+    }
+
+    public String getTimescaledbTable() {
+        return timescaleDB_table;
+    }
+
+    public int getTimescaledbBatchSize() {
+        return timescaleDBbatchSize;
     }
 
     public static class StreamConfig {
