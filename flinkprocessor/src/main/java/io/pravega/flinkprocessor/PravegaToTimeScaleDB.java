@@ -37,7 +37,7 @@ public class PravegaToTimeScaleDB extends AbstractJob {
 
     public void run() {
         try {
-            String query = String.format("INSERT INTO %s(time, tagname, value, success) VALUES (?, ?, ?, ?)",
+            String query = String.format("INSERT INTO %s(time, tagname, devicename, deviceid, value, success) VALUES (?, ?, ?, ?, ?, ?)",
                     getConfig().getTimescaledbTable());
             JDBCOutputFormat jdbcOutput = JDBCOutputFormat.buildJDBCOutputFormat()
                     .setDrivername("org.postgresql.Driver")
@@ -49,7 +49,7 @@ public class PravegaToTimeScaleDB extends AbstractJob {
                              )
                     )
                     .setQuery(query)
-                    .setSqlTypes(new int[] { Types.TIMESTAMP_WITH_TIMEZONE, Types.VARCHAR, Types.BIGINT, Types.BOOLEAN })
+                    .setSqlTypes(new int[] { Types.TIMESTAMP_WITH_TIMEZONE, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.BIGINT, Types.BOOLEAN })
                     .setBatchInterval(getConfig().getTimescaledbBatchSize())
                     .finish();
             final AppConfiguration.StreamConfig inputStreamConfig = getConfig().getStreamConfig("input");
@@ -72,11 +72,13 @@ public class PravegaToTimeScaleDB extends AbstractJob {
                     .name("read-flatten-events");
             //events.printToErr();
             DataStream<Row> rows = events.map((MapFunction<tag, Row>) metricValue -> {
-                Row row = new Row(4);
+                Row row = new Row(6);
                 row.setField(0, LocalDateTime.ofEpochSecond(metricValue.timestamp/1000, 0 , ZoneOffset.UTC));
                 row.setField(1, metricValue.tagName);
-                row.setField(2, metricValue.value);
-                row.setField(3, metricValue.success);
+                row.setField(2, metricValue.deviceName);
+                row.setField(3, metricValue.deviceID);
+                row.setField(4, metricValue.value);
+                row.setField(5, metricValue.success);
                 return row;
             });
             rows.writeUsingOutputFormat(jdbcOutput);
