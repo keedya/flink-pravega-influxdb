@@ -94,7 +94,7 @@ public class AppConfiguration {
         timescaleDBbatchSize = params.getInt("timescaleDBbatchSize", 5000);
         // InfluxDB
         metricsSink  = params.get("metricsSink", "InfluxDB");
-        influxDbUrl  = params.get("influxDB.host", "http://milos-influxdb.default.svc.cluster.local:8086");
+        influxDbUrl  = params.get("influxDB.host", "http://tsdb-influxdb.default.svc.cluster.local:8086");
         influxdb_username = params.get("influxDB.username", "admin");
         influxdb_password = params.get("influxDB.password", "password");
         influxdb_database = params.get("influxDB.database", "milos");

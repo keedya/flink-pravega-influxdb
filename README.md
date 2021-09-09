@@ -6,6 +6,7 @@ tar xzvf influxsink-0.0.2.tgz
 cd influxsink
 export NAMESPACE=<project name>
 export INPUT_STREAM=agg-stream4
+export TSDB_FQN=tsdb.sdp.sdp-demo.org
 ./scripts/install_on_sdp.sh
 ```
 

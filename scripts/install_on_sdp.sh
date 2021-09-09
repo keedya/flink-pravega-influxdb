@@ -12,25 +12,20 @@ source ${ROOT_DIR}/scripts/env.sh
 : ${NAMESPACE?"You must export NAMESPACE"}
 : ${INPUT_STREAM?"You must export INPUT_STREAM"}
 : ${DOCKER_REGISTRY?"You must export DOCKER_REGISTRY"}
+: ${TSDB_FQN?"You must export TSDB_FQN"}
 # Start a job
 VALUES_FILE=${ROOT_DIR}/values/metrics.yaml
 
-
-# remove old influxdb grafana
-kubectl delete -f ${ROOT_DIR}/scripts/MetricsKeycloak.yaml | true
-
-kubectl apply -f ${ROOT_DIR}/scripts/Metrics.yaml | true
-sleep 4
 
 #deploy new influxdb with tls
 # Load the image
 sudo -E ${SDP_INSTALL_EXECUTABLE} --accept-eula push --registry ${DOCKER_REGISTRY} --input ${ROOT_DIR}/docker_images/influx.tar.gz
 
-helm upgrade --install milos --timeout 600s  --wait \
+helm upgrade --install tsdb --timeout 600s  --wait \
      --set image.repository=${DOCKER_REGISTRY}/influxdb \
      --set image.tag=1.8.0-alpine  \
      --set setDefaultUser.image=${DOCKER_REGISTRY}/curl:latest \
-     --set ingress.hostname=milos.sdp.sdp-demo.org \
+     --set ingress.hostname=${TSDB_FQN} \
      ${ROOT_DIR}/charts/influxdb \
      $@
 
@@ -59,9 +54,6 @@ helm upgrade --install --timeout 600s  --wait \
     --set "mavenCoordinate.group=${APP_GROUP_ID}" \
     --set "mavenCoordinate.version=${APP_VERSION}" \
     $@
-
-# delete old svc for influxdb for litmus
-kubectl delete svc litmus | true
 
 echo " InfluxDB URL"
 kubectl get ing
